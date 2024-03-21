@@ -1,20 +1,13 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras import layers, models
-
-# Sample text data
 text_data = [
     "The quick brown fox jumps over the lazy dog.",
     "A quick brown fox jumps over a lazy dog.",
     "The lazy dog jumps over the quick brown fox."
 ]
-
-# Tokenize text data
 tokenizer = tf.keras.preprocessing.text.Tokenizer()
 tokenizer.fit_on_texts(text_data)
 total_words = len(tokenizer.word_index) + 1
-
-# Generate sequences
 input_sequences = []
 for line in text_data:
     token_list = tokenizer.texts_to_sequences([line])[0]
@@ -22,39 +15,38 @@ for line in text_data:
         n_gram_sequence = token_list[:i+1]
         input_sequences.append(n_gram_sequence)
 
-# Pad sequences
 max_sequence_len = max([len(x) for x in input_sequences])
 input_sequences = np.array(tf.keras.preprocessing.sequence.pad_sequences(input_sequences, maxlen=max_sequence_len, padding='pre'))
 
-# Create input and output sequences
-xs, labels = input_sequences[:,:-1],input_sequences[:,-1]
+xs, labels = input_sequences[:, :-1], input_sequences[:, -1]
+# Adjust labels if necessary (e.g., if class indices start from 1)
+# labels -= 1  # Uncomment this line if class indices start from 1
 ys = tf.keras.utils.to_categorical(labels, num_classes=total_words)
 
-# Define the model architecture
-model = models.Sequential([
-    layers.Embedding(total_words, 100, input_length=max_sequence_len - 1),
-    layers.Bidirectional(layers.LSTM(150)),
-    layers.Dense(total_words, activation='softmax')
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Embedding(input_dim=1000, output_dim=64),
+    tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(150)),
+    tf.keras.layers.Dense(total_words, activation='softmax')
 ])
+
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 model.summary()
-
 # Train the model
 history = model.fit(xs, ys, epochs=100, verbose=1)
-
 # Function to generate text
 def generate_text(seed_text, next_words, max_sequence_len):
     for _ in range(next_words):
         token_list = tokenizer.texts_to_sequences([seed_text])[0]
-        token_list = tf.keras.preprocessing.sequence.pad_sequences([token_list], maxlen=max_sequence_len-1, padding='pre')
-        predicted = model.predict_classes(token_list, verbose=0)
+        token_list = tf.keras.preprocessing.sequence.pad_sequences([token_list], maxlen=max_sequence_len - 1, padding='pre')
+        predicted_probs = model.predict(token_list)[0]
+        predicted_index = np.argmax(predicted_probs)
         output_word = ""
         for word, index in tokenizer.word_index.items():
-            if index == predicted:
+            if index == predicted_index:
                 output_word = word
                 break
         seed_text += " " + output_word
     return seed_text
 
 # Test the model
-print(generate_text("quick brown", 5, max_sequence_len))
+print(generate_text("quick brown", 4, max_sequence_len))
