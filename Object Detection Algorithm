@@ -1,0 +1,53 @@
+CNN
+
+We need three basic components to define a basic convolutional network.
+
+The convolutional layer: Suppose we have an image of size 6*6. We define a weight matrix which extracts certain features from the images
+The Pooling layer[optional] : Sometimes when the images are too large, we would need to reduce the number of trainable parameters. It is then desired to periodically introduce pooling layers between subsequent convolution layers. Pooling is done for the sole purpose of reducing the spatial size of the image. 
+The output layer: After multiple layers of convolution and padding, we would need the output in the form of a class. The convolution and pooling layers would only be able to extract features and reduce the number of parameters from the original images. However, to generate the final output we need to apply a fully connected layer to generate an output equal to the number of classes we need. It becomes tough to reach that number with just the convolution layers. Convolution layers generate 3D activation maps while we just need the output as whether or not an image belongs to a particular class.
+Backward Propogation[optional]: Then output layer has a loss function like categorical cross-entropy, to compute the error in prediction. Once the forward pass is complete the backpropagation begins to update the weight and biases for error and loss reduction.
+
+RCNN
+
+RCNN algorithm proposes a bunch of boxes in the image and checks if any of these boxes contain any object. RCNN uses selective search to extract these boxes from an image (these boxes are called regions).
+1-First take a pre-trained convolutional neural network
+2-This model is retrained. We train the last layer of the network based on the number of classes that need to be detected
+3-The third step is to get the Region of Interest for each image. We then reshape all these regions so that they can match the CNN input size.
+4-After getting the regions, we train SVM to classify objects and background. For each class, we train one binary SVM.
+5-Finally, we train a linear regression model to generate tighter bounding boxes for each identified object in the image.
+
+We get the Regions of Interest (ROI) using some proposal method example, selective search, 
+All these regions are then reshaped as per the input of the CNN, and each region is passed to the ConvNet,
+CNN then extracts features for each region and SVMs are used to divide these regions into different classes,
+Finally, a bounding box regression (Bbox reg) is used to predict the bounding boxes for each identified region
+
+FAST RCNN
+1-we take an image as an input.
+2-This image is passed to a ConvNet which in turns generates the Regions of Interest.
+3-A RoI pooling layer is applied on all of these regions to reshape them as per the input of the ConvNet. Then, each region is passed on to a fully connected network.
+4-A softmax layer is used on top of the fully connected network to output classes. Along with the softmax layer, a linear regression layer is also used parallely to output bounding box coordinates for predicted classes.
+
+So, instead of using three different models (like in RCNN), Fast RCNN uses a single model which extracts features from the regions, divides them into different classes, and returns the boundary boxes for the identified classes simultaneously
+
+Faster RCNN
+
+1-We take an image as input and pass it to the ConvNet which returns the feature map for that image.
+2-Region proposal network is applied on these feature maps. This returns the object proposals along with their objectness score.
+3-A RoI pooling layer is applied on these proposals to bring down all the proposals to the same size.
+4-Finally, the proposals are passed to a fully connected layer which has a softmax layer and a linear regression layer at its top, to classify and output the bounding boxes for objects.
+
+
+
+Algorithm		  Features
+CNN		        Divides the image into multiple regions and then classify each region into various classes.
+RCNN		      Uses selective search to generate regions. Extracts around 2000 regions from each image.
+Fast RCNN		  Each image is passed only once to the CNN and feature maps are extracted. Selective search is used on these maps to generate predictions. Combines all the three models used in RCNN together.
+Faster RCNN	  Replaces the selective search method with region proposal network which made the algorithm much faster.
+
+Algorithm		  Limitations
+CNN		        Needs a lot of regions to predict accurately and hence high computation time.
+RCNN		      High computation time as each region is passed to the CNN separately also it uses three different model for making predictions.
+Fast RCNN		  Selective search is slow and hence computation time is still high.
+Faster RCNN	  Object proposal takes time and as there are different systems working one after the other, the performance of systems depends on how the previous system has performed.
+
+
